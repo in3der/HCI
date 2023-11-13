@@ -64,7 +64,7 @@ def move():
         canvas.create_rectangle(mx * 80, my * 80, mx * 80 + 79, my * 80 + 79,
                                 fill="pink", width=0, tag="PAINT")
     canvas.delete("MYCHR")
-    img = tkinter.PhotoImage(file="metamong.png")
+    img = tkinter.PhotoImage(file="HCI\metamong.png")
     canvas.create_image(mx * 80 + 40, my * 80 + 40, image=img, tag="MYCHR")
 
 def count_tile():
@@ -103,7 +103,7 @@ def draw_maze():
 
 def draw_character():
     global mx, my, iris_status
-    img_path = "metamong.png"
+    img_path = "HCI\metamong.png"
     img = Image.open(img_path)
     #img = img.resize((80, 80), Image.ANTIALIAS)
     img = ImageTk.PhotoImage(img)
@@ -145,9 +145,10 @@ def yolo_process(img):
 print("model enter")
 
 #model = torch.hub.load('ultralytics/yolov5', 'custom', path = 'best.pt')
-#model = torch.hub.load('ultralytics/yolov5', 'custom', path = 'myfacebest.pt')
-model = torch.hub.load('ultralytics/yolov5', 'custom', path = 'myfacebest1111.pt')
-#model = torch.hub.load('ultralytics/yolov5', 'custom', path = 'myfacebest1112.pt')
+#model = torch.hub.load('ultralytics/yolov5', 'custom', path = 'myfacebest.pt') # 잘 안됨..
+#model = torch.hub.load('ultralytics/yolov5', 'custom', path = 'HCI\myfacebest1111.pt') # right, left, center 만 잡힘
+#model = torch.hub.load('ultralytics/yolov5', 'custom', path = 'HCI\myfacebest1112.pt') # 거의 down만 잡힘
+model = torch.hub.load('ultralytics/yolov5', 'custom', path = 'HCI\\best1113.pt') # 경서 data 
 model.conf = 0.3
 model.iou = 0
 resize_rate = 1
@@ -247,17 +248,24 @@ def video_capture_loop():
             # Threshold 기준으로 눈동자의 위치를 계산
             if avr_x_iris_per < (0.5 - iris_x_threshold):
                 iris_status = 'Left'
+                print("Left : ((", avr_x_iris_per < (0.5 - iris_x_threshold), "))", "avr_x_iris_per : ", avr_x_iris_per, "iris_x_threshold : ", iris_x_threshold, "avr_y_iris_per : ", avr_y_iris_per, "iris_y_threshold : ", iris_y_threshold)
                 move()
             elif avr_x_iris_per > (0.5 + iris_x_threshold):
                 iris_status = 'Right'
+                print("Right : ((", avr_x_iris_per > (0.5 + iris_x_threshold), "))", "avr_x_iris_per : ", avr_x_iris_per, "iris_x_threshold : ", iris_x_threshold, "avr_y_iris_per : ", avr_y_iris_per, "iris_y_threshold : ", iris_y_threshold)
                 move()
-            elif avr_y_iris_per < (0.5 - iris_y_threshold):
+            #elif avr_y_iris_per > (0.5 - iris_y_threshold):
+            elif avr_y_iris_per > (0.6):
                 iris_status = 'Up'
+                print("Up : ((", avr_y_iris_per > (0.6), "))", "avr_x_iris_per : ", avr_x_iris_per, "iris_x_threshold : ", iris_x_threshold, "avr_y_iris_per : ", avr_y_iris_per, "iris_y_threshold : ", iris_y_threshold)
                 move()
             else:
                 iris_status = 'Center'
+                print("Center 에서 Up : ((", avr_y_iris_per > (0.6 - iris_y_threshold), "))")
+                print("Center : ", "avr_x_iris_per : ", avr_x_iris_per, "iris_x_threshold : ", iris_x_threshold, "avr_y_iris_per : ", avr_y_iris_per, "iris_y_threshold : ", iris_y_threshold)
         elif len(eye_list) == 2 and len(iris_list) == 0:
             iris_status = 'Down'
+            #print("Down : ", "avr_x_iris_per : ", avr_x_iris_per, "iris_x_threshold : ", iris_x_threshold, "avr_y_iris_per : ", avr_y_iris_per, "iris_y_threshold : ", iris_y_threshold)
             move()
 
         cv2.putText(img, 'Iris Direction: {}'.format(iris_status), (10, 40), cv2.FONT_HERSHEY_COMPLEX, 1,
