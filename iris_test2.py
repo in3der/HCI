@@ -146,9 +146,9 @@ print("model enter")
 
 #model = torch.hub.load('ultralytics/yolov5', 'custom', path = 'best.pt')
 #model = torch.hub.load('ultralytics/yolov5', 'custom', path = 'myfacebest.pt') # 잘 안됨..
-#model = torch.hub.load('ultralytics/yolov5', 'custom', path = 'HCI\myfacebest1111.pt') # right, left, center 만 잡힘
-#model = torch.hub.load('ultralytics/yolov5', 'custom', path = 'HCI\myfacebest1112.pt') # 거의 down만 잡힘
-model = torch.hub.load('ultralytics/yolov5', 'custom', path = 'HCI\\best1113.pt') # 경서 data 
+#model = torch.hub.load('ultralytics/yolov5', 'custom', path = 'HCI/myfacebest1111.pt') # right, left, center 만 잡힘
+#model = torch.hub.load('ultralytics/yolov5', 'custom', path = 'HCI/myfacebest1112.pt') # 거의 down만 잡힘
+model = torch.hub.load('ultralytics/yolov5', 'custom', path = 'HCI/best1113.pt') # 경서 data 
 model.conf = 0.3
 model.iou = 0
 resize_rate = 1
