@@ -1,37 +1,69 @@
+from scipy.spatial import distance
+from imutils import face_utils
+import imutils
+import dlib
+import cv2
+
+import time
+import atexit
+import subprocess
+import sys
+import psutil
+
 from cv2 import CAP_PROP_FRAME_HEIGHT, CAP_PROP_FRAME_WIDTH
 import os
 import numpy as np
 from PIL import Image, ImageFont
 from PIL import ImageDraw
 import torch
-import cv2
 import tkinter
 import tkinter.messagebox
 from PIL import ImageTk
 import threading
 import time
 
+# 졸음감지 - 눈 비율 계산 
+def eye_aspect_ratio(eye):
+	A = distance.euclidean(eye[1], eye[5])
+	B = distance.euclidean(eye[2], eye[4])
+	C = distance.euclidean(eye[0], eye[3])
+	ear = (A + B) / (2.0 * C)
+	return ear
+	
+# 졸음감지 - 변수, 기타설정, dat 파일 불러오기 
+thresh = 0.25
+frame_check = 20
+detect = dlib.get_frontal_face_detector()
+predict = dlib.shape_predictor("HCI\shape_predictor_68_face_landmarks.dat")# Dat file is the crux of the code
+(lStart, lEnd) = face_utils.FACIAL_LANDMARKS_68_IDXS["left_eye"]
+(rStart, rEnd) = face_utils.FACIAL_LANDMARKS_68_IDXS["right_eye"]
+cap=cv2.VideoCapture(0)
+global flag
+flag=0
+
+
 mx = 1  # 캐릭터의 가로 뱡향 위치를 관리하는 변수
 my = 1  # 캐릭터의 세로 뱡향 위치를 관리하는 변수
 state = 0  # 게임 상황, 0: 게임 진행, 1: 게임 클리어, 2: 게임 클리어 불가능
 key = 0  # 키 이름을 입력할 변수 선언
 
-# 미로 초기화
+
+# 미로 초기화, 세팅
 maze = [
     [1, 1, 1, 1, 1, 1, 1, 1, 1, 1],
     [1, 0, 0, 0, 0, 0, 1, 1, 1, 1],
-    [1, 1, 1, 1, 1, 0, 1, 1, 1, 1],
-    [1, 1, 1, 1, 1, 0, 0, 0, 0, 1],
-    [1, 1, 1, 1, 1, 1, 1, 1, 0, 1],
-    [1, 0, 0, 0, 0, 0, 0, 0, 0, 1],
+    [1, 1, 1, 1, 1, 1, 1, 1, 1, 1],
+    [1, 1, 1, 1, 1, 1, 1, 1, 1, 1],
+    [1, 1, 1, 1, 1, 1, 1, 1, 1, 1],
+    [1, 1, 1, 1, 1, 1, 1, 1, 1, 1],
     [1, 1, 1, 1, 1, 1, 1, 1, 1, 1]
 ]
-
 resize_rate = 1
 iris_x_threshold, iris_y_threshold = 0.15, 0.26
 cap = cv2.VideoCapture(0)
 mx, my, state, key, iris_status, left_x_per = 1, 1, 0, 0, 'Center', 'None'
 
+# 미로 canvas 불러오기 
 root = tkinter.Tk()
 root.title("미로를 칠하는 중")
 root.bind("<KeyPress>", lambda e: key_down(e))
@@ -39,6 +71,8 @@ root.bind("<KeyRelease>", lambda e: key_up(e))
 canvas = tkinter.Canvas(width=800, height=560, bg="white")
 canvas.pack()
 
+
+# 미로 - def로 함수 정의 
 def key_down(e):
     global key  # key을 전역 변수로 취급
     key = e.keysym  # 눌려진 키 이름을 key에 대입
@@ -143,10 +177,8 @@ def yolo_process(img):
     return obj_list
 print("model enter")
 
-#model = torch.hub.load('ultralytics/yolov5', 'custom', path = 'best.pt')
-#model = torch.hub.load('ultralytics/yolov5', 'custom', path = 'myfacebest.pt') # 잘 안됨..
-#model = torch.hub.load('ultralytics/yolov5', 'custom', path = 'HCI/myfacebest1111.pt') # right, left, center 만 잡힘
-#model = torch.hub.load('ultralytics/yolov5', 'custom', path = 'HCI/myfacebest1112.pt') # 거의 down만 잡힘
+
+# 미로 - 모델 불러오기
 model = torch.hub.load('ultralytics/yolov5', 'custom', path = 'HCI/best1113.pt') # 경서 data 
 model.conf = 0.3
 model.iou = 0
@@ -157,10 +189,10 @@ cap = cv2.VideoCapture(0)
 # cap.set(CAP_PROP_FRAME_HEIGHT, 1440)
 iris_status = 'Center'
 left_x_per = 'None'
-print("enter main_proc")
 
 
-def video_capture_loop():
+# 미로 - 함수 지정 - 실제 cam on, iris detect, 미로찾기 실행
+def main_maze():
     global mx, my, state, key, iris_status, left_x_per
     while True:
         if key == "Escape":
@@ -180,9 +212,13 @@ def video_capture_loop():
 
         if state == 1:
             tkinter.messagebox.showinfo("축하합니다!", "모든 바닥을 칠했습니다!")
-            #reset()
-            root.destroy()
-            return
+            # #reset()
+            # cv2.destroyAllWindows()
+            # root.destroy()
+            # return
+            if ret:
+                root.destroy()
+                return
 
         if state == 2:
             reset()
@@ -277,8 +313,75 @@ def video_capture_loop():
         root.update_idletasks()
         root.update()
 
-# 실행
-video_capture_loop()
-root.mainloop()
-cv2.destroyAllWindows()
+
+
+
+
+# 졸음감지 코드 함수로 묶음 
+def main_sleep_detect():
+    global flag
+    while True:
+        ret, frame=cap.read()
+        frame = imutils.resize(frame, width=450)
+        gray = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
+        subjects = detect(gray, 0)
+        for subject in subjects:
+            shape = predict(gray, subject)
+            shape = face_utils.shape_to_np(shape)#converting to NumPy Array
+            leftEye = shape[lStart:lEnd]
+            rightEye = shape[rStart:rEnd]
+            leftEAR = eye_aspect_ratio(leftEye)
+            rightEAR = eye_aspect_ratio(rightEye)
+            ear = (leftEAR + rightEAR) / 2.0
+            leftEyeHull = cv2.convexHull(leftEye)
+            rightEyeHull = cv2.convexHull(rightEye)
+            cv2.drawContours(frame, [leftEyeHull], -1, (0, 255, 0), 1)
+            cv2.drawContours(frame, [rightEyeHull], -1, (0, 255, 0), 1)
+            if ear < thresh:
+                flag += 1
+                print (flag)
+                if flag >= frame_check:
+                    cv2.putText(frame, "****************ALERT!****************", (10, 30),
+                        cv2.FONT_HERSHEY_SIMPLEX, 0.7, (0, 0, 255), 2)
+                    cv2.putText(frame, "****************ALERT!****************", (10,325),
+                        cv2.FONT_HERSHEY_SIMPLEX, 0.7, (0, 0, 255), 2)
+                    print ("Drowsy")
+                    ## 졸림 신호 들어오면 iris_test2.py 실행 --- 아직 고쳐야한다. import iris_test하고 threading하면 순식간에 꺼졌다가 사라짐. 
+                    # a.py 프로세스 종료 함수
+                    def terminate_a_py():
+                        for process in psutil.process_iter(['pid', 'name']):
+                            if 'python' in process.info['name']:
+                                pid = process.info['pid']
+                                subprocess.run(["taskkill", "/F", "/PID", str(pid)])  # Windows에서의 프로세스 종료 명령어
+                                print(f"Process (PID: {pid}) terminated.")
+                                return
+
+                    # a.py 종료 후 b.py 실행
+                    #terminate_a_py()
+                    #with open('iris_test2.py', 'r', encoding='utf-8') as f:
+                    #with open('iris_test2.py', 'r', encoding='latin-1') as f:
+                    #	code = compile(f.read(), 'iris_test2.py', 'exec')
+                    #	exec(code)
+                    #with open('iris_test2.py', 'rb') as f:
+                    #    print("drowsy123")
+                    #    code = compile(f.read(), 'iris_test2.py', 'exec')
+                    #    exec(code)
+
+                    cv2.destroyAllWindows()
+                    # 실행
+                    main_maze()
+
+                    print("drowsy1111")
+            else:
+                flag = 0
+        cv2.imshow("Frame", frame)
+        key = cv2.waitKey(1) & 0xFF
+        if key == ord("q"):
+            break
+    cv2.destroyAllWindows()
+    cap.release() 
+	
+# 졸음감지 코드 실행
+main_sleep_detect()
+
 
