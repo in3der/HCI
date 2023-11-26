@@ -21,6 +21,8 @@ import tkinter.messagebox
 from PIL import ImageTk
 import threading
 import time
+import pygame
+pygame.init()
 
 # 졸음감지 - 눈 비율 계산 
 def eye_aspect_ratio(eye):
@@ -42,34 +44,36 @@ global flag
 flag=0
 
 
-mx = 1  # 캐릭터의 가로 뱡향 위치를 관리하는 변수
-my = 1  # 캐릭터의 세로 뱡향 위치를 관리하는 변수
-state = 0  # 게임 상황, 0: 게임 진행, 1: 게임 클리어, 2: 게임 클리어 불가능
-key = 0  # 키 이름을 입력할 변수 선언
+def make_maze():
+    global maze, canvas, root, mx, my, state, key, resize_rate, iris_x_threshold, iris_y_threshold, cap, iris_status, left_x_per
+    mx = 1  # 캐릭터의 가로 뱡향 위치를 관리하는 변수
+    my = 1  # 캐릭터의 세로 뱡향 위치를 관리하는 변수
+    state = 0  # 게임 상황, 0: 게임 진행, 1: 게임 클리어, 2: 게임 클리어 불가능
+    key = 0  # 키 이름을 입력할 변수 선언
 
-
-# 미로 초기화, 세팅
-maze = [
-    [1, 1, 1, 1, 1, 1, 1, 1, 1, 1],
-    [1, 0, 0, 0, 0, 0, 1, 1, 1, 1],
-    [1, 1, 1, 1, 1, 1, 1, 1, 1, 1],
-    [1, 1, 1, 1, 1, 1, 1, 1, 1, 1],
-    [1, 1, 1, 1, 1, 1, 1, 1, 1, 1],
-    [1, 1, 1, 1, 1, 1, 1, 1, 1, 1],
-    [1, 1, 1, 1, 1, 1, 1, 1, 1, 1]
-]
-resize_rate = 1
-iris_x_threshold, iris_y_threshold = 0.15, 0.26
-cap = cv2.VideoCapture(0)
-mx, my, state, key, iris_status, left_x_per = 1, 1, 0, 0, 'Center', 'None'
-
-# 미로 canvas 불러오기 
-root = tkinter.Tk()
-root.title("미로를 칠하는 중")
-root.bind("<KeyPress>", lambda e: key_down(e))
-root.bind("<KeyRelease>", lambda e: key_up(e))
-canvas = tkinter.Canvas(width=800, height=560, bg="white")
-canvas.pack()
+    print("setting1")
+    # 미로 초기화, 세팅
+    maze = [
+        [1, 1, 1, 1, 1, 1, 1, 1, 1, 1],
+        [1, 0, 0, 0, 0, 0, 1, 1, 1, 1],
+        [1, 1, 1, 1, 1, 1, 1, 1, 1, 1],
+        [1, 1, 1, 1, 1, 1, 1, 1, 1, 1],
+        [1, 1, 1, 1, 1, 1, 1, 1, 1, 1],
+        [1, 1, 1, 1, 1, 1, 1, 1, 1, 1],
+        [1, 1, 1, 1, 1, 1, 1, 1, 1, 1]
+    ]
+    resize_rate = 1
+    iris_x_threshold, iris_y_threshold = 0.15, 0.26
+    #cap = cv2.VideoCapture(0)
+    mx, my, state, key, iris_status, left_x_per = 1, 1, 0, 0, 'Center', 'None'
+    print("setting2")
+    # 미로 canvas 불러오기 
+    root = tkinter.Tk()
+    root.title("미로를 칠하는 중")
+    root.bind("<KeyPress>", lambda e: key_down(e))
+    root.bind("<KeyRelease>", lambda e: key_up(e))
+    canvas = tkinter.Canvas(width=800, height=560, bg="white")
+    canvas.pack()
 
 
 # 미로 - def로 함수 정의 
@@ -111,10 +115,13 @@ def count_tile():
 def check():
     cnt = count_tile()
     if 0 not in [maze[my - 1][mx], maze[my + 1][mx], maze[my][mx - 1], maze[my][mx + 1]]:
+        print("2")
         return 2
     elif cnt == 0:
+        print("1")
         return 1
     else:
+        print(0)
         return 0
 
 def reset():
@@ -193,6 +200,8 @@ left_x_per = 'None'
 
 # 미로 - 함수 지정 - 실제 cam on, iris detect, 미로찾기 실행
 def main_maze():
+    make_maze()
+
     global mx, my, state, key, iris_status, left_x_per
     while True:
         if key == "Escape":
@@ -213,15 +222,21 @@ def main_maze():
         if state == 1:
             tkinter.messagebox.showinfo("축하합니다!", "모든 바닥을 칠했습니다!")
             # #reset()
-            # cv2.destroyAllWindows()
-            # root.destroy()
-            # return
-            if ret:
-                root.destroy()
-                return
+            cv2.destroyAllWindows()
+            root.destroy()
+            return
+            
+            # if ret:
+            #     root.destroy()
+            #     return
 
         if state == 2:
+            tkinter.messagebox.showinfo("축하합니다!", "모든 바닥을 칠했습니다!")
             reset()
+            #cv2.destroyAllWindows()
+            root.destroy()      # 이게 사실 종료하는데 direct이긴한데 다시 들어가면 죽음
+            
+            return
 
         draw_maze()
         draw_character()
@@ -341,6 +356,8 @@ def main_sleep_detect():
                 flag += 1
                 print (flag)
                 if flag >= frame_check:
+                    sound = pygame.mixer.Sound("HCI\80s_Phone.ogg")
+                    sound.play()
                     cv2.putText(frame, "****************ALERT!****************", (10, 30),
                         cv2.FONT_HERSHEY_SIMPLEX, 0.7, (0, 0, 255), 2)
                     cv2.putText(frame, "****************ALERT!****************", (10,325),
@@ -370,6 +387,9 @@ def main_sleep_detect():
                     cv2.destroyAllWindows()
                     # 실행
                     main_maze()
+                    cv2.destroyAllWindows()
+                    #root.destroy()
+
 
                     print("drowsy1111")
             else:
