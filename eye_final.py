@@ -14,8 +14,6 @@ import tkinter
 import tkinter.messagebox
 from PIL import ImageTk
 import pygame
-
-
 pygame.init()
 
 # 졸음감지 - 눈 비율 계산 
@@ -61,13 +59,13 @@ def load_and_show_popup(image_path):
     # 이미지 로딩 및 팝업 창 표시
     show_popup(image_path)
 
+# 미로 만들기
 def make_maze():
     global maze, canvas, root, mx, my, state, key, resize_rate, iris_x_threshold, iris_y_threshold, cap, iris_status, left_x_per
     mx = 1  # 캐릭터의 가로 뱡향 위치를 관리하는 변수
     my = 5  # 캐릭터의 세로 뱡향 위치를 관리하는 변수
     state = 0  # 게임 상황, 0: 게임 진행, 1: 게임 클리어, 2: 게임 클리어 불가능
     key = 0  # 키 이름을 입력할 변수 선언
-
 
     # 미로 초기화, 세팅
     maze = [
@@ -80,7 +78,6 @@ def make_maze():
         [1, 1, 1, 1, 1, 1, 1, 1, 1, 1]
     ]
     resize_rate = 1
-    iris_x_threshold, iris_y_threshold = 0.15, 0.26
     iris_status, left_x_per = 'Center', 'None'
 
     # 미로 canvas 불러오기 
@@ -116,8 +113,6 @@ def move():
         canvas.create_oval(mx * 80, my * 80, mx * 80 + 79, my * 80 + 79,
                                 fill="pink", width=0, tag="PAINT")
     canvas.delete("MYCHR")
-    img = ImageTk.PhotoImage(Image.open("metamong.png"))
-    canvas.create_image(mx * 80 + 40, my * 80 + 40, image=img, tag="MYCHR")
 
 def count_tile():
     cnt = 0
@@ -155,19 +150,11 @@ def draw_maze():
         for x in range(10):
             if maze[y][x] == 1:
                 canvas.create_rectangle(x * 80, y * 80, x * 80 + 79, y * 80 + 79, fill="skyblue", width=0)
-                #canvas.create_oval(x * 80, y * 80, x * 80 + 79, y * 80 + 79, fill="skyblue", width=0)
-                #canvas.create_oval(x * 80, y * 80, x * 80 + 79, y * 80 + 79, outline="skyblue", width=2, stipple="gray50")
-
 
 def draw_character():
     global mx, my, iris_status
-    img_path = "metamong.png"
-    img = Image.open(img_path)
-    img = ImageTk.PhotoImage(img)
-
     x = mx * 80 + 40
     y = my * 80 + 40
-    canvas.create_image(x, y, image=img, tag="MYCHR")
 
     if iris_status == 'Up':
         canvas.create_text(x, y - 30, text="^", font=("Helvetica", 16), fill="red")
@@ -199,12 +186,9 @@ def yolo_process(img):
         }
         obj_list.append(obj_dict)
     return obj_list
-print("model enter")
-
 
 # 미로 - 모델 불러오기
-#model = torch.hub.load('ultralytics/yolov5', 'custom', path = 'best1113.pt') # 경서 data 
-model = torch.hub.load('ultralytics/yolov5', 'custom', path = 'best1201.pt')
+model = torch.hub.load('ultralytics/yolov5', 'custom', path = 'best1113.pt')
 model.conf = 0.3
 model.iou = 0
 resize_rate = 1
@@ -212,7 +196,6 @@ iris_x_threshold, iris_y_threshold = 0.15, 0.26 # 눈동자가 중앙에서 얼�
 cap = cv2.VideoCapture(0)
 iris_status = 'Center'
 left_x_per = 'None'
-
 
 # 미로 - 함수 지정 - 실제 cam on, iris detect, 미로찾기 실행
 def main_maze():
@@ -326,8 +309,8 @@ def main_maze():
                 print("Center 에서 Up : ((", avr_y_iris_per > (0.6 - iris_y_threshold), "))")
                 print("Center : ", "avr_x_iris_per : ", avr_x_iris_per, "iris_x_threshold : ", iris_x_threshold, "avr_y_iris_per : ", avr_y_iris_per, "iris_y_threshold : ", iris_y_threshold)
 
-        #elif len(iris_list) == 0:      # 눈을 아예 감으면 down으로 인식하게 함 
-        elif len(eye_list) == 2 and len(iris_list) == 0:
+        elif len(iris_list) == 0:      # 눈을 아예 감으면 down으로 인식하게 함 
+        #elif len(eye_list) == 2 and len(iris_list) == 0:
             iris_status = 'Down'
             move()
 
@@ -359,7 +342,7 @@ def main_sleep_detect():
             cv2.drawContours(frame, [leftEyeHull], -1, (0, 255, 0), 1)
             cv2.drawContours(frame, [rightEyeHull], -1, (0, 255, 0), 1)
             if ear < thresh:
-                #time.sleep(0.3)
+                time.sleep(0.2)
                 flag += 1
                 print (flag)
                 if flag == frame_check:

@@ -1,19 +1,17 @@
 import sys
-from PyQt5.QtWidgets import QApplication, QWidget, QLabel, QVBoxLayout
-from PyQt5.QtGui import QPainter, QColor
-from PyQt5.QtCore import Qt, QRect
-import subprocess
-
-
-import sys
+import cv2
 from PyQt5.QtWidgets import QApplication, QWidget, QLabel, QVBoxLayout
 from PyQt5.QtGui import QColor
+from PyQt5.QtCore import Qt
 import subprocess
 
 
 class CustomWidget(QWidget):
     def __init__(self):
         super().__init__()
+
+        CustomWidgetResult.capture = cv2.VideoCapture(0)
+        CustomWidgetResult.cv2 = cv2
 
         # 박스의 색상 및 파일 매핑
         self.box_colors = [(255, 255, 0), (255, 182, 193)]
@@ -75,6 +73,9 @@ class CustomWidget(QWidget):
 
 
 class CustomWidgetResult(QWidget):
+    capture = None
+    cv2 = None
+
     def __init__(self):
         super().__init__()
         self.box_colors = [(173, 216, 230), (173, 216, 230),(173, 216, 230)]
@@ -108,7 +109,11 @@ class CustomWidgetResult(QWidget):
         self.box_click_handlers[idx]()
 
     def open_ref(self):
-        subprocess.Popen(['python', self.file_paths[0]])
+        if CustomWidgetResult.capture is not None and CustomWidgetResult.cv2 is not None:
+            process = subprocess.Popen(['python', self.file_paths[0]])
+            process.communicate()  # Wait for the subprocess to complete
+            CustomWidgetResult.capture.release()
+            CustomWidgetResult.cv2.destroyAllWindows()
 
     def open_posture(self):
         subprocess.Popen(['python', self.file_paths[1]])
