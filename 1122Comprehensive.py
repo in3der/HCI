@@ -4,7 +4,7 @@ import imutils
 import dlib
 import cv2
 import time
-
+import threading
 from cv2 import CAP_PROP_FRAME_HEIGHT, CAP_PROP_FRAME_WIDTH
 import numpy as np
 from PIL import Image, ImageFont
@@ -40,16 +40,26 @@ flag=0
 # 이제 정신이 드니..? 이미지 팝업
 def show_popup(image_path):
     popup = tkinter.Tk()
-    popup.title("Popup Window")
+    popup.title("Wake Up!")
     # 이미지 불러오기
     image = Image.open(image_path)
     dog_image = ImageTk.PhotoImage(image)
     # 라벨에 이미지 추가
     label = tkinter.Label(popup, image=dog_image)
     label.pack()
+    # 창 크기와 위치 설정 - center
+    screen_width = popup.winfo_screenwidth()
+    screen_height = popup.winfo_screenheight()
+    dog_width, dog_height = 400, 300
+    x = (screen_width - dog_width) // 2
+    y = (screen_height - dog_height) // 2
+    popup.geometry(f"{dog_width}x{dog_height}+{x}+{y}")
     # 창을 3초 동안 유지
-    popup.after(3000, popup.destroy)
+    popup.after(5000, popup.destroy)
     popup.mainloop()
+def load_and_show_popup(image_path):
+    # 이미지 로딩 및 팝업 창 표시
+    show_popup(image_path)
 
 def make_maze():
     global maze, canvas, root, mx, my, state, key, resize_rate, iris_x_threshold, iris_y_threshold, cap, iris_status, left_x_per
@@ -79,8 +89,6 @@ def make_maze():
     root.bind("<KeyPress>", lambda e: key_down(e))
     root.bind("<KeyRelease>", lambda e: key_up(e))
     canvas = tkinter.Canvas(width=800, height=560, bg="white")
-    background_image = ImageTk.PhotoImage(Image.open("wakeupdog.jpeg"))
-    canvas.create_image(0, 0, anchor=tkinter.NW, image=background_image)
     canvas.pack()
 
 # 미로 - def로 함수 정의 
@@ -105,7 +113,7 @@ def move():
 
     if maze[my][mx] == 0:
         maze[my][mx] = 2
-        canvas.create_rectangle(mx * 80, my * 80, mx * 80 + 79, my * 80 + 79,
+        canvas.create_oval(mx * 80, my * 80, mx * 80 + 79, my * 80 + 79,
                                 fill="pink", width=0, tag="PAINT")
     canvas.delete("MYCHR")
     img = ImageTk.PhotoImage(Image.open("metamong.png"))
@@ -146,9 +154,9 @@ def draw_maze():
     for y in range(7):
         for x in range(10):
             if maze[y][x] == 1:
-                #canvas.create_rectangle(x * 80, y * 80, x * 80 + 79, y * 80 + 79, fill="skyblue", width=0)
+                canvas.create_rectangle(x * 80, y * 80, x * 80 + 79, y * 80 + 79, fill="skyblue", width=0)
                 #canvas.create_oval(x * 80, y * 80, x * 80 + 79, y * 80 + 79, fill="skyblue", width=0)
-                canvas.create_oval(x * 80, y * 80, x * 80 + 79, y * 80 + 79, outline="skyblue", width=2, stipple="gray50")
+                #canvas.create_oval(x * 80, y * 80, x * 80 + 79, y * 80 + 79, outline="skyblue", width=2, stipple="gray50")
 
 
 def draw_character():
@@ -363,15 +371,17 @@ def main_sleep_detect():
                     cv2.putText(frame, "****************ALERT!****************", (10,325),
                         cv2.FONT_HERSHEY_SIMPLEX, 0.7, (0, 0, 255), 2)
 
-                if flag >= 80:
+                if flag == 80:
                     sound2 = pygame.mixer.Sound("sleepalarm.mp3")
                     sound2.play()
                     flag=0
                     cv2.destroyAllWindows()
                     # 미로 실행
                     main_maze()
-                    #show_popup("wakeupdog.jpeg")
                     cv2.destroyAllWindows()
+                    # 정신이 드니..? popup
+                    image_path = "wakeupdog.jpeg"
+                    threading.Thread(target=load_and_show_popup, args=(image_path,)).start()
                     
             else:
                 flag = 0
