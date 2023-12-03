@@ -1,11 +1,11 @@
 import sys
 import cv2
-from PyQt5.QtWidgets import QApplication, QWidget, QLabel, QVBoxLayout
-from PyQt5.QtGui import QColor
-from PyQt5.QtCore import Qt
+from PyQt5.QtWidgets import QApplication, QWidget, QLabel, QVBoxLayout, QPushButton, QMessageBox, QMainWindow, QDialog, QDesktopWidget
+from PyQt5.QtGui import QColor, QPixmap
+from PyQt5.QtCore import Qt, QTimer
 import subprocess
 
-
+# 시연용 GUI
 class CustomWidget(QWidget):
     def __init__(self):
         super().__init__()
@@ -18,8 +18,7 @@ class CustomWidget(QWidget):
         self.file_paths = ['eye.py']
 
         # 박스를 클릭할 때 실행할 함수 연결
-        self.box_click_handlers = [self.open_eye,self.open_posture]
-
+        self.box_click_handlers = [self.open_eye, self.open_posture]
 
         # 결과 창을 저장할 변수 추가
         self.result_widget = None
@@ -28,7 +27,7 @@ class CustomWidget(QWidget):
 
     def init_ui(self):
         self.setGeometry(100, 100, 400, 300)
-        self.setWindowTitle('Main ')
+        self.setWindowTitle('Main')
 
         # 박스를 표시할 QLabel들을 만듭니다.
         self.labels = [QLabel(self) for _ in range(2)]
@@ -48,14 +47,48 @@ class CustomWidget(QWidget):
         for label in self.labels:
             layout.addWidget(label)
 
+        # Add information button
+        info_button = QPushButton('프로그램 사용법', self)
+        info_button.setToolTip('Click for information')
+        info_button.clicked.connect(self.show_popup)
+        layout.addWidget(info_button)
+
         self.show()
 
     def on_box_click(self, idx):
         # 박스를 클릭했을 때 실행할 함수 호출
         self.box_click_handlers[idx]()
 
+    # 사용법 이미지 팝업
+    def show_popup(self):
+        # 이미지를 표시하는 위젯
+        popup_widget = QDialog(self)
+        popup_widget.setWindowTitle("Usage")
+
+        image_label = QLabel(popup_widget)
+        pixmap = QPixmap("information.png")
+        pixmap = pixmap.scaled(600, 600, Qt.KeepAspectRatio)
+        image_label.setPixmap(pixmap)
+        image_label.setScaledContents(True)
+
+        popup_layout = QVBoxLayout(popup_widget)
+        popup_layout.addWidget(image_label)
+        desktop = QDesktopWidget().availableGeometry()
+        center_x = desktop.width() // 3 - popup_widget.width() // 2
+        center_y = desktop.height() // 4 - popup_widget.height() // 2
+
+        # 창을 화면 중앙으로 이동
+        popup_widget.move(center_x, center_y)
+
+        # 타이머를 사용하여 10초 후에 창을 닫음
+        timer = QTimer(popup_widget)
+        timer.timeout.connect(popup_widget.close)
+        timer.start(10000)  # 10초 (10000 밀리초)
+
+        popup_widget.exec_()
+
     def open_eye(self):
-        print("a")
+        subprocess.Popen(['python', self.file_paths[0]])
 
     def open_posture(self):
         # 결과 창이 이미 열려 있으면 숨기기/보이기 토글
@@ -69,8 +102,6 @@ class CustomWidget(QWidget):
             print("Opening posture result window.")
             self.result_widget = CustomWidgetResult()
             self.result_widget.show()
-
-
 
 class CustomWidgetResult(QWidget):
     capture = None
@@ -121,7 +152,6 @@ class CustomWidgetResult(QWidget):
     def open_result(self):
         # print("Opening file:", self.file_paths[1])
         subprocess.Popen(['python', self.file_paths[2]])
-
 
 if __name__ == '__main__':
     app = QApplication(sys.argv)
