@@ -16,23 +16,23 @@ SMWU 23-2 HCI개론 (동서연pf)</br></br>
 
 **기능** </br>
 
-졸음감지 : 백그라운드에서 계속 실행됨, 2단계로 나뉘어서 첫 번째 단계에서는 짧은 알림, 두 번째 단계에서는 긴 알림과 함께 게임이 실행된다. 각 단계에 도달하면 앙림소리가 재생됨</br>
+졸음감지 : 백그라운드에서 계속 실행됨, 2단계로 나뉘어서 첫 번째 단계에서는 짧은 알림, 두 번째 단계에서는 긴 알림과 함께 게임이 실행된다. 각 단계에 도달하면 dkf림소리가 재생됨</br>
 
 거북목 감지 : 촬영을 통해 사용자별 정상 목과 거북목 상태정보 추출, 이를 바탕으로 사용자의 자세를 일정 시간마다 지속적으로 검사하여 거북목 발생 시 경로 알림. 프로그램 종료 후 사용자의 자세를 평가하여 점수로 수치화하여 제공함.
 
 </br>
 
 **파일** </br> 
-- main GUI.py (Demo_gui.py)
+- main GUI.py (Demo_gui.py) - 메인GUI화면. (Demo_gui는 졸음-자세교정 분리된 데모용)
   + 졸음감지
-    * eye_final.py
-    * shape_predictor_68_face_landmarks.dat
-    * data.yaml
-    * 80s_Phone.ogg
-    * sleepalarm.mp3
-    * wakeupdog.jpeg
+    * eye_final.py - 졸음감지+미로+eyetracking
+    * shape_predictor_68_face_landmarks.dat - 학습된 얼굴 랜드마크 데이터
+    * data.yaml - YOLO모델용 데이터
+    * 80s_Phone.ogg - 졸음 1단계 알람
+    * sleepalarm.mp3 - 졸음 2단계 알람
+    * wakeupdog.jpeg - 미로 완주 후 팝업 이미지
   + 거북목 감지
-    * extract_std.py
-    * calendar.py
-    * hci.py
-  + information.png
+    * extract_std.py - 자세 추출
+    * calendar.py - 점수 기록 캘린더
+    * hci.py - 자세 tracking
+  + information.png - 프로그램 사용 설명서
